@@ -9,31 +9,38 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.observe
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.foody.viewmodels.MainViewModel
-import com.example.foody.R
 import com.example.foody.adapters.RecipesAdapter
-import com.example.foody.util.Constants.Companion.API_KEY
+import com.example.foody.databinding.FragmentRecipesBinding
 import com.example.foody.util.NetworkResult
 import com.example.foody.util.observeOnce
 import com.example.foody.viewmodels.RecipesViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.android.synthetic.main.fragment_recipes.view.*
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class RecipesFragment : Fragment() {
 
-    private lateinit var mView:View
-    private val mAdapter by lazy{RecipesAdapter()}
+    /**FragmentRecipesBinding was automatically created
+     * after converting fragment_recipes.xml layout to binding
+     * - initial value set to be null*/
+    private var _binding: FragmentRecipesBinding? = null
+
+    /**_binding!! statement that not null*/
+    private val binding get() = _binding!!
+
     private lateinit var mainViewModel: MainViewModel
     private lateinit var recipesViewModel: RecipesViewModel
+    private val mAdapter by lazy { RecipesAdapter() }
+
 
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        /**initialized mainViewModel*/
         mainViewModel = ViewModelProvider(requireActivity()).get(MainViewModel::class.java)
+        /**initialized recipesViewModel*/
         recipesViewModel = ViewModelProvider(requireActivity()).get(RecipesViewModel::class.java)
     }
 
@@ -42,17 +49,25 @@ class RecipesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        mView = inflater.inflate(R.layout.fragment_recipes, container, false)
+
+        _binding = FragmentRecipesBinding.inflate(inflater, container, false)
+
+        /**specifying lifecycleOwner because of use live data variables in the fragment_recipes layout*/
+        binding.lifecycleOwner = this
+
+        /**binding variable from layout fragment_recipes file with actual mainViewModel
+         * that was initialised in onCreate */
+        binding.mainViewModel = mainViewModel
 
         setupRecyclerView()
         readDatabase()
 
-        return mView
+        return binding.root
     }
 
     private fun setupRecyclerView(){
-        mView.recycler_view.adapter = mAdapter
-        mView.recycler_view.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.adapter = mAdapter
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         showShimmerEffect()
     }
 
@@ -108,10 +123,17 @@ class RecipesFragment : Fragment() {
     }
 
     private fun showShimmerEffect(){
-        mView.recycler_view.showShimmer()
+        binding.recyclerView.showShimmer()
     }
 
     private fun hideShimmerEffect(){
-        mView.recycler_view.hideShimmer()
+        binding.recyclerView.hideShimmer()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        /**avoiding memory leaks, as whenever the
+         * RecipesFragment is destroyed binding set to null*/
+        _binding = null
     }
 }
