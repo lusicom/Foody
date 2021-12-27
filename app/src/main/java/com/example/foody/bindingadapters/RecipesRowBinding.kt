@@ -12,6 +12,9 @@ class RecipesRowBinding {
     companion object{
 
         @BindingAdapter("loadImageFromUrl")
+        //in the JVM you can have members of companion objects
+        // generated as real static methods and fields if you use the
+        // @JvmStatic annotation.
         @JvmStatic
         fun loadImageFromUrl(imageView: ImageView,imageUrl: String){
             imageView.load(imageUrl){
