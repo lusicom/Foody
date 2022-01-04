@@ -5,6 +5,7 @@ import androidx.datastore.DataStore
 import androidx.datastore.preferences.*
 import com.example.foody.util.Constants.Companion.DEFAULT_DIET_TYPE
 import com.example.foody.util.Constants.Companion.DEFAULT_MEAL_TYPE
+import com.example.foody.util.Constants.Companion.PREFERENCES_BACK_ONLINE
 import com.example.foody.util.Constants.Companion.PREFERENCES_DIET_TYPE
 import com.example.foody.util.Constants.Companion.PREFERENCES_DIET_TYPE_ID
 import com.example.foody.util.Constants.Companion.PREFERENCES_MEAL_TYPE
@@ -30,6 +31,7 @@ class DataStoreRepository
         val selectedMealTypeId = preferencesKey<Int>(PREFERENCES_MEAL_TYPE_ID)
         val selectedDietType = preferencesKey<String>(PREFERENCES_DIET_TYPE)
         val selectedDietTypeId = preferencesKey<Int>(PREFERENCES_DIET_TYPE_ID)
+        val backOnline  = preferencesKey<Boolean>(PREFERENCES_BACK_ONLINE)
     }
 
     private val dataStore : DataStore<Preferences> = context.createDataStore(
@@ -47,6 +49,13 @@ class DataStoreRepository
             preferences[PreferenceKeys.selectedMealTypeId] = mealTypeId
             preferences[PreferenceKeys.selectedDietType] = dietType
             preferences[PreferenceKeys.selectedDietTypeId] = dietTypeId
+        }
+    }
+
+    //fun edit called to store value of backOnline from fun param inside the key
+    suspend fun saveBackOnline(backOnline: Boolean){
+        dataStore.edit { preferences ->
+            preferences[PreferenceKeys.backOnline] = backOnline
         }
     }
 
@@ -74,6 +83,20 @@ class DataStoreRepository
                 selectedDietType,
                 selectedDietTypeId
             )
+        }
+
+    val readBackOnline: Flow<Boolean> = dataStore.data
+        .catch { exception->
+            if (exception is IOException){
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            //return the value of backOnline variable, if no vale return default "false"
+            val backOnline = preferences[PreferenceKeys.backOnline]?: false
+            backOnline
         }
 }
 

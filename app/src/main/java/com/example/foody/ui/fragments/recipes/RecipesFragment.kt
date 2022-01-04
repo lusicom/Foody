@@ -16,10 +16,12 @@ import com.example.foody.R
 import com.example.foody.viewmodels.MainViewModel
 import com.example.foody.adapters.RecipesAdapter
 import com.example.foody.databinding.FragmentRecipesBinding
+import com.example.foody.util.NetworkListener
 import com.example.foody.util.NetworkResult
 import com.example.foody.util.observeOnce
 import com.example.foody.viewmodels.RecipesViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -39,6 +41,7 @@ class RecipesFragment : Fragment() {
     private lateinit var recipesViewModel: RecipesViewModel
     private val mAdapter by lazy { RecipesAdapter() }
 
+    private lateinit var networkListener: NetworkListener
 
     @Override
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +55,7 @@ class RecipesFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         // Inflate the layout for this fragment
 
         _binding = FragmentRecipesBinding.inflate(inflater, container, false)
@@ -65,11 +68,31 @@ class RecipesFragment : Fragment() {
         binding.mainViewModel = mainViewModel
 
         setupRecyclerView()
-        readDatabase()
+        //observe value of backOnline variable and store it in ViewModel
+        recipesViewModel.readBackOnline.observe(viewLifecycleOwner, {
+            recipesViewModel.backOnline = it
+        })
+
+        //initializing networkListener
+        //using lifecycleScope as collect(fun that returns MutableStateFlow) is a suspend function
+       lifecycleScope.launch{
+        networkListener = NetworkListener()
+        networkListener.checkNetworkAvailability(requireContext()).collect { status ->
+            Log.d("NetworkListener", status.toString())
+            recipesViewModel.networkStatus = status
+            recipesViewModel.showNetworkStatus()
+            readDatabase()
+        }
+    }
 
         //binding button to navigate from RecipesFragment to RecipesBottomSheet
         binding.recipesFab.setOnClickListener{
-            findNavController().navigate(R.id.action_recipesFragment_to_recipesBottomSheet)
+            //navigate to bottomSheet only if NetworkStatus is true (so devise has internet connection)
+            if(recipesViewModel.networkStatus){
+                findNavController().navigate(R.id.action_recipesFragment_to_recipesBottomSheet)
+            } else{
+                recipesViewModel.showNetworkStatus()
+            }
         }
 
         return binding.root
